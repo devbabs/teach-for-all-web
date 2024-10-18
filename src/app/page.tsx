@@ -1,101 +1,117 @@
-import Image from "next/image";
+'use client';
+import styles from "@/app/ui/form.module.css";
+import { Formik, FormikHelpers } from 'formik';
+import useFormFields from "./state-management/custom-hooks/useFormFields";
+import { useEffect, useRef, useState } from "react";
+import * as yup from 'yup'
+import { Colors } from "./utils/colors";
+import AddFormFieldModal from "./components/AddFormFieldModal";
+import { useDispatch } from "react-redux";
+import { resetFormFields } from "./state-management/form-fields/FormFieldsSlice";
+import FormSuccessModal from "./components/FormSuccessModal";
+import { Form } from "react-bootstrap";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+	const dispatch = useDispatch()
+	const [fields] = useFormFields()
+    const form = useRef<FormikHelpers<any> | null>(null)
+    let [formFields, setFormFields] = useState(Object.fromEntries(fields.map(field => [field.name, ''])))
+    let [validationSchema, setValidationSchema] = useState({})
+    const newFormFieldBottomSheet = useRef(null)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	const [showNewFieldModal, setShowNewFieldModal] = useState(false);
+	const [showFormSuccessModal, setShowFormSuccessModal] = useState(false);
+
+    useEffect(() => {
+        initForm()
+    }, [fields.length])	
+	
+	const initForm = () => {
+		setFormFields(Object.fromEntries(fields.map(field => [field.name, ''])))
+        setValidationSchema(yup.object().shape(Object.fromEntries(fields.map(field => {
+            let fieldName = field.name
+            let fieldValidation = yup.string()
+
+            if (field.type === 'email') {
+                fieldValidation = fieldValidation.email(`${field.name} is not a valid email`)
+            }
+
+            if (field.isRequired) {
+                fieldValidation = fieldValidation.required(`${field.name} is required`)                    
+            }
+
+            return [fieldName, fieldValidation]
+        }))))
+	}
+
+	const submitForm = (values: any, formikHelpers: FormikHelpers<any>) => {
+		formikHelpers.setSubmitting(false)
+        formikHelpers.resetForm()
+		formikHelpers.setErrors({})
+        dispatch(resetFormFields())
+        
+		setShowFormSuccessModal(true)
+
+	}
+
+	return (
+		<div className={`container ${styles.page}`}>
+			<AddFormFieldModal
+				show={showNewFieldModal}
+				setShow={setShowNewFieldModal}
+			/>
+			<FormSuccessModal
+				show={showFormSuccessModal}
+				setShow={setShowFormSuccessModal}
+				formValues={form?.current?.values ?? {}}
+			/>
+			<h1>
+				Welcome to the Teach For All Dynamic Form Builder
+			</h1>
+			<Formik
+				initialValues={formFields}
+				onSubmit={submitForm}
+				innerRef={form}
+				validationSchema={validationSchema}
+			>
+				{
+					({handleSubmit, handleChange, values, handleBlur, resetForm, isSubmitting, errors}) => (
+						<form onSubmit={handleSubmit}>
+							{
+								fields.map((eachFormField, formFieldIndex) => (
+									<div style={{ marginBottom: 10 }} key={formFieldIndex}>
+										<label htmlFor="" style={{marginBottom: 5, fontSize: 12}}>
+											{eachFormField.label}
+										</label>
+										<Form.Control
+											type="text"
+											name={eachFormField.name}
+											onChange={handleChange}
+											onBlur={handleBlur}
+											value={values[eachFormField.name]}
+											className={'form-control'}
+										/>
+										{
+											errors && errors[eachFormField.name] && (
+												<div className={styles.error}>
+													{errors[eachFormField.name]}
+												</div>
+											)
+										}
+									</div>	
+								))
+							}
+
+							<button type="button" className="btn btn-outline-dark form-button" style={{borderColor: Colors.primary, marginRight: 10}} onClick={() => setShowNewFieldModal(true)}>
+								Add New Field
+							</button>
+							<button type="submit" className="btn btn-primary form-button" style={{backgroundColor: Colors.primary, borderColor: Colors.primary}}>
+								Submit
+							</button>
+						</form>
+					)
+				}
+			</Formik>
+		</div>
+	)
 }

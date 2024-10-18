@@ -1,0 +1,32 @@
+.page {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.largeTitle {
+    font-size: 32;
+    line-height: 45;
+    margin-bottom: -10;
+    font-weight: "700";
+}
+.error {
+    color: red;
+    font-size: 12px;
+}
+.radioButtonContainer {
+    margin-bottom: 10;
+}
+.label {
+    font-size: small;
+    margin-bottom: 5px;
+}
+.formValueContainer {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-size: small;
+}
+.formValuesContainer {
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-top: 10px;
+}
